@@ -1,11 +1,3 @@
-Perfect — here’s your fully updated **root directory README** for the **MLOps Gun Detection** project, following your conventions:
-
-✅ No horizontal rules
-✅ Includes `custom_exception.py` and `logger.py` in `src/`
-✅ Uses your standard project setup structure and tone
-
----
-
 # 🏗️ **Initial Project Setup — MLOps Gun Detection**
 
 This branch establishes the **foundational structure** for the **MLOps Gun Detection** project.
