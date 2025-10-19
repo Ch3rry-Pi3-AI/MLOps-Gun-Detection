@@ -1,7 +1,3 @@
-Got it ✅ Here’s your adapted version for the **Gun Detection** MLOps project — tailored for the **initial setup stage** of the `src/` folder (no Airflow references, and rewritten around OpenCV-based image processing and detection pipelines):
-
-
-
 # `src/` README — Core Utilities (Custom Exception & Logger)
 
 This folder contains **foundational utilities** for the **Gun Detection** MLOps pipeline.
@@ -144,7 +140,3 @@ def detect_guns(image_path):
 * `logger.py` provides **structured, timestamped logging**.
 
 Together they form the **core reliability layer** of the **MLOps Gun Detection** pipeline — supporting smooth debugging, traceability, and maintainability across all modules.
-
-
-
-Would you like me to include a short “Next Steps” section at the bottom (e.g., mentioning that model, preprocessing, and inference modules will be added next under `src/`)? It can help tie this README into the overall project scaffolding.
