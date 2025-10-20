@@ -1,119 +1,129 @@
-# 🎯 **Exploratory Training & Inference — MLOps Gun Detection**
+# 🧠 **Data Processing & Dataset Preparation — MLOps Gun Detection**
 
-This branch represents the **data scientist’s experimental stage**, where the **Guns Object Detection dataset** (sourced from Kaggle) is explored, visualised, and used to train a **Faster R-CNN** model for firearm detection.
+This branch represents the **data preparation stage** of the **MLOps Gun Detection** pipeline.
+Here, the project evolves from experimental Kaggle notebook development into a **modular, reusable data processing system**.
 
-The goal of this stage is to **understand dataset structure**, perform **data loading and visualisation experiments**, and develop a **baseline object detection model** — before the workflow is modularised into automated preprocessing and training pipelines.
+The focus of this stage is to **standardise dataset handling**, build a **robust PyTorch Dataset class**, and ensure that image–label pairs are properly loaded, validated, and moved to the correct device (CPU/GPU) with full logging and error handling support.
 
 ## 🧾 **What This Stage Includes**
 
-* ✅ Jupyter Notebook (`notebook/guns-object-detection.ipynb`) for model experimentation on **Kaggle**
-* ✅ Dataset source: [**issaisasank/guns-object-detection**](https://www.kaggle.com/datasets/issaisasank/guns-object-detection)
-* ✅ Custom **PyTorch Dataset** for image–label pairing
-* ✅ **Data visualisation** utilities to display bounding boxes over images
-* ✅ Implementation of **Faster R-CNN (ResNet-50 FPN)** model for object detection
-* ✅ Training loop with **Adam optimiser** and per-epoch loss reporting
-* ✅ Application of **Non-Maximum Suppression (NMS)** for post-processing predictions
-* ✅ Visualisation of **ground-truth vs predicted** bounding boxes
-* ✅ Baseline experimentation environment — fully GPU-accelerated on **Kaggle**
+* ✅ New module: `src/data_processing.py` implementing the `GunDataset` class
+* ✅ Integration of **custom logging** and **exception handling** for all preprocessing steps
+* ✅ Normalisation and tensor conversion of image data using **OpenCV** and **PyTorch**
+* ✅ Automatic computation of **bounding box areas** and **object labels**
+* ✅ Robust file verification and error management with `CustomException`
+* ✅ Standalone test block to validate dataset integrity
 
-This notebook functions as a **sandbox for the data scientist**, allowing iterative experimentation before converting the logic into reusable preprocessing and training modules for production.
+This stage transforms the project from **notebook-based experimentation** into a **structured and traceable data preparation layer**, forming the bridge between dataset ingestion and model training.
 
 ## 🗂️ **Updated Project Structure**
 
-```
+```text
 mlops-gun-detection/
 ├── artifacts/
 │   └── raw/
 │       ├── Images/                  # Image samples from Kaggle dataset
 │       └── Labels/                  # Text files containing bounding box coordinates
-├── notebook/
-│   └── guns-object-detection.ipynb  # 🔍 Model training and visualisation notebook
-├── config/
 ├── src/
+│   ├── custom_exception.py          # Unified error handling
+│   ├── data_ingestion.py            # Dataset download and extraction
+│   ├── data_processing.py           # New GunDataset class for image + label loading
+│   ├── logger.py                    # Centralised logging configuration
+│   └── __init__.py
 ├── requirements.txt
 ├── setup.py
 └── README.md                        # 📖 You are here
 ```
 
-> 💡 The dataset used in this stage is automatically available within the **Kaggle notebook environment** under `/kaggle/input/guns-object-detection/`.
-> GPU acceleration (P100) must be enabled via **Settings → Accelerator → GPU (P100)**.
-> Users may need to **sign up and verify** their Kaggle account to enable GPU access.
+> 💡 The dataset for this stage remains sourced from **Kaggle**, under
+> [https://www.kaggle.com/datasets/issaisasank/guns-object-detection](https://www.kaggle.com/datasets/issaisasank/guns-object-detection).
+> Ensure GPU acceleration is available if you plan to verify data loading in a Kaggle or local CUDA-enabled environment.
 
-## 🧩 **Notebook Highlights**
+## 🧩 **Key Module Highlights**
 
-Within `notebook/guns-object-detection.ipynb`, you’ll find the following structured sections:
+### 🔹 `src/data_processing.py` — Dataset Definition
 
-1. **Setup & Device Configuration** — imports dependencies, detects CUDA availability, and prepares the environment.
+Implements the **`GunDataset`** class that prepares the dataset for object detection training.
+Handles:
 
-2. **Data Loading & Visualisation** — defines helper functions to display annotated images with bounding boxes.
+* Image reading via OpenCV
+* RGB conversion and normalisation
+* Bounding box loading from text files
+* Label and area computation
+* Device transfer and tensor formatting
+* Detailed logging and structured exception handling
 
-3. **Dataset Preparation** — builds a custom `Gun_Data` PyTorch Dataset class to handle image–label pairing.
+This class ensures every data sample is validated, logged, and returned in the exact structure expected by **Faster R-CNN** and other object detection models.
 
-4. **Model Definition** — initialises a pretrained **Faster R-CNN (ResNet-50 FPN)** with custom output classes.
+### 🔹 `src/logger.py` — Logging System
 
-5. **Training Loop** — compiles the model, configures the optimiser, and trains over 30 epochs.
+Handles all structured logging within the pipeline.
+Each operation (image load, label parse, dataset check) is timestamped and written to a daily log file under `logs/`.
 
-6. **Inference & Post-Processing** — runs predictions, applies **Non-Maximum Suppression**, and prepares results.
+### 🔹 `src/custom_exception.py` — Exception Handling
 
-7. **Visualisation** — displays both **ground-truth** and **predicted** bounding boxes using OpenCV and Matplotlib.
+Guarantees consistent and traceable error reporting across modules, identifying both the source file and line number of failures.
 
-## ⚙️ **Running the Notebook**
+### 🔹 `src/data_ingestion.py` — Dataset Retrieval
 
-Because this notebook depends on GPU acceleration and Kaggle’s pre-mounted dataset structure, it must be executed **directly on Kaggle**.
+Maintains the ingestion logic for downloading and preparing the Kaggle dataset, ensuring the correct directory structure under `artifacts/raw/`.
 
-### Steps:
+## ⚙️ **Testing the Module**
 
-1. Go to the dataset page:
-   👉 [https://www.kaggle.com/datasets/issaisasank/guns-object-detection](https://www.kaggle.com/datasets/issaisasank/guns-object-detection)
+To validate dataset loading and verify proper image–label pairing, you can run:
 
-2. Click **`<> Code`** → **New Notebook**.
+```bash
+python src/data_processing.py
+```
 
-3. Open the right-hand **Settings** panel.
+Expected output (sample):
 
-4. Under **Accelerator**, select **GPU (P100)**.
+```
+2025-10-20 19:05:42,018 - INFO - ✅ Data Processing Initialised...
+2025-10-20 19:05:42,152 - INFO - 📸 Loading data for index 0
+2025-10-20 19:05:42,384 - INFO - Image Path: artifacts/raw/Images/001.jpeg
+🖼️ Image Shape: torch.Size([3, 480, 640])
+📦 Target Keys: dict_keys(['boxes', 'area', 'image_id', 'labels'])
+🔲 Bounding Boxes: tensor([[ 54., 129., 212., 320.]])
+```
 
-5. If GPU is greyed out, verify your Kaggle account via email or phone.
-
-6. Copy or upload `guns-object-detection.ipynb` into the editor.
-
-7. Run all cells sequentially to load data, train the model, and visualise predictions.
+This confirms that images and bounding boxes are loaded correctly and tensors are transferred to the specified device.
 
 ## 🧠 **Outputs**
 
-| Output                        | Description                                             |
-| :---------------------------- | :------------------------------------------------------ |
-| **Trained Model (in-memory)** | Faster R-CNN model trained for firearm detection.       |
-| **Predictions**               | Bounding boxes and confidence scores for detected guns. |
-| **Visualisations**            | Ground-truth vs predicted box plots using Matplotlib.   |
-| **Training Logs**             | Epoch-wise loss metrics displayed in notebook output.   |
+| Output                   | Description                                               |
+| :----------------------- | :-------------------------------------------------------- |
+| **Preprocessed Dataset** | Images and bounding boxes converted into PyTorch tensors  |
+| **Target Dictionary**    | Contains bounding boxes, labels, areas, and image IDs     |
+| **Logging Output**       | Detailed logs for dataset loading and preprocessing       |
+| **Custom Exceptions**    | Traceable, formatted error messages during I/O operations |
 
 ## 🧩 **Integration with MLOps Pipeline**
 
-This notebook establishes the foundation for a **reproducible MLOps pipeline** in subsequent branches:
+This stage formalises the **data foundation** for downstream model development and training.
+In the next stages:
 
-* The **`Gun_Data`** dataset class and **`Model`** wrapper will be modularised under `src/data_processing.py` and `src/model_training.py`.
+* The **GunDataset** class will feed directly into the model training pipeline.
+* Integration with `training_pipeline.py` will enable reproducible dataset handling during training and validation.
+* Dataset transformations and augmentations can be modularised into a dedicated **preprocessing pipeline**.
+* All data loading and processing events will remain fully logged and auditable.
 
-* Future pipelines will automate dataset ingestion, preprocessing, training, and inference tracking.
+## 🚀 **Next Stage — Model Architecture**
 
-* Trained weights will be versioned and stored under `artifacts/models/` for downstream deployment.
+The next branch introduces the **Model Architecture** stage, where the Faster R-CNN design is defined and integrated with the preprocessed dataset.
+This will include:
 
-* Integration with **Flask or FastAPI inference apps** will follow after preprocessing automation.
+* A dedicated `src/model_architecture.py` module for building and configuring Faster R-CNN.
+* Integration of transfer learning from pre-trained COCO weights.
+* Compilation methods for optimiser, learning rate, and scheduler setup.
+* Training and evaluation hooks for modular reuse within `training_pipeline.py`.
 
-## 🚀 **Next Stage — Data Preprocessing**
-
-The next branch evolves this experimental notebook into a structured **data preprocessing pipeline**, featuring:
-
-* Creation of `src/data_processing.py` for automated normalisation, augmentation, and transformation logic.
-* Parameter and path configuration updates under `config/`.
-* Artefact storage under `artifacts/processed/` for versioned, reusable datasets.
-* Integration of logging and exception handling to ensure pipeline robustness.
-
-This transition marks the evolution from **GPU-based research** → **modular data preprocessing pipeline**, bridging the gap between **experimentation and engineered automation**.
+This marks the transition from **data preparation** to **deep learning model design and configuration**, paving the way for structured, production-ready training pipelines.
 
 ## ✅ **Best Practices**
 
-* Always enable **GPU (P100)** before training.
-* Run cells sequentially from top to bottom — the workflow is linear.
-* Save sample predictions and bounding box plots for reporting.
-* Keep code modular and move reusable components into `src/` as the project matures.
-* Treat this notebook as a **sandbox** — production logic will be implemented in future pipeline stages.
+* Use GPU-enabled environments for validating large datasets.
+* Keep `logger` calls concise but informative for debugging.
+* Avoid hard-coded paths — reference directories dynamically using `config/paths_config.py`.
+* Test the dataset locally before running large training jobs.
+* Document changes and test outputs to maintain full reproducibility.
