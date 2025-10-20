@@ -1,93 +1,119 @@
-# 🏗️ **Stage 01 — Data Ingestion (MLOps Gun Detection)**
+# 🎯 **Exploratory Training & Inference — MLOps Gun Detection**
 
-This stage implements the **data ingestion pipeline** for the **MLOps Gun Detection** project.
-It automates the retrieval and preparation of the **gun detection dataset** from **Kaggle via KaggleHub**, structuring the results into a standardised artifact directory for subsequent analysis and model development.
+This branch represents the **data scientist’s experimental stage**, where the **Guns Object Detection dataset** (sourced from Kaggle) is explored, visualised, and used to train a **Faster R-CNN** model for firearm detection.
 
-The ingestion process ensures **reproducibility**, **traceability**, and **data integrity** by combining consistent configuration management, unified logging, and robust exception handling.
+The goal of this stage is to **understand dataset structure**, perform **data loading and visualisation experiments**, and develop a **baseline object detection model** — before the workflow is modularised into automated preprocessing and training pipelines.
 
-## 🗂️ **Project Structure**
+## 🧾 **What This Stage Includes**
 
-```text
+* ✅ Jupyter Notebook (`notebook/guns-object-detection.ipynb`) for model experimentation on **Kaggle**
+* ✅ Dataset source: [**issaisasank/guns-object-detection**](https://www.kaggle.com/datasets/issaisasank/guns-object-detection)
+* ✅ Custom **PyTorch Dataset** for image–label pairing
+* ✅ **Data visualisation** utilities to display bounding boxes over images
+* ✅ Implementation of **Faster R-CNN (ResNet-50 FPN)** model for object detection
+* ✅ Training loop with **Adam optimiser** and per-epoch loss reporting
+* ✅ Application of **Non-Maximum Suppression (NMS)** for post-processing predictions
+* ✅ Visualisation of **ground-truth vs predicted** bounding boxes
+* ✅ Baseline experimentation environment — fully GPU-accelerated on **Kaggle**
+
+This notebook functions as a **sandbox for the data scientist**, allowing iterative experimentation before converting the logic into reusable preprocessing and training modules for production.
+
+## 🗂️ **Updated Project Structure**
+
+```
 mlops-gun-detection/
-├── artifacts/                     # 📦 Dataset storage for raw and processed data
-│   └── raw/                       # Unprocessed dataset components
-│       ├── Images/                # Gun detection images
-│       └── Labels/                # Bounding box coordinate files for detected guns
-├── config/                        # ⚙️ Configuration files and environment settings
-│   ├── __init__.py
-│   └── data_ingestion_config.py   # Dataset source and target directory configuration
-└── src/                           # 🧠 Core utilities and ingestion module
-    ├── __init__.py
-    └── data_ingestion.py          # Handles dataset download and extraction from KaggleHub
+├── artifacts/
+│   └── raw/
+│       ├── Images/                  # Image samples from Kaggle dataset
+│       └── Labels/                  # Text files containing bounding box coordinates
+├── notebook/
+│   └── guns-object-detection.ipynb  # 🔍 Model training and visualisation notebook
+├── config/
+├── src/
+├── requirements.txt
+├── setup.py
+└── README.md                        # 📖 You are here
 ```
 
-> 💡 **Note:** The `artifacts/` directory is automatically created during data ingestion if it does not already exist.
+> 💡 The dataset used in this stage is automatically available within the **Kaggle notebook environment** under `/kaggle/input/guns-object-detection/`.
+> GPU acceleration (P100) must be enabled via **Settings → Accelerator → GPU (P100)**.
+> Users may need to **sign up and verify** their Kaggle account to enable GPU access.
 
-## ⚙️ **Overview**
+## 🧩 **Notebook Highlights**
 
-The **Data Ingestion** stage performs the following operations:
+Within `notebook/guns-object-detection.ipynb`, you’ll find the following structured sections:
 
-1. **Creates the required directory structure** under `artifacts/raw/`.
-2. **Downloads the dataset** from Kaggle using `kagglehub`.
-3. **Extracts and organises** the dataset contents into `Images/` and `Labels/` folders.
-4. **Logs every step** of the process with timestamps for full traceability.
+1. **Setup & Device Configuration** — imports dependencies, detects CUDA availability, and prepares the environment.
 
-This modular design ensures that future stages — such as preprocessing and model training — can seamlessly build upon a clean, well-organised data foundation.
+2. **Data Loading & Visualisation** — defines helper functions to display annotated images with bounding boxes.
 
-## ⚡ **Key Components**
+3. **Dataset Preparation** — builds a custom `Gun_Data` PyTorch Dataset class to handle image–label pairing.
 
-### 1️⃣ `config/data_ingestion_config.py`
+4. **Model Definition** — initialises a pretrained **Faster R-CNN (ResNet-50 FPN)** with custom output classes.
 
-Defines dataset and target directory configuration for ingestion.
+5. **Training Loop** — compiles the model, configures the optimiser, and trains over 30 epochs.
 
-```python
-DATASET_NAME = "issaisasank/guns-object-detection"
-TARGET_DIR = "artifacts"
-```
+6. **Inference & Post-Processing** — runs predictions, applies **Non-Maximum Suppression**, and prepares results.
 
-### 2️⃣ `src/data_ingestion.py`
+7. **Visualisation** — displays both **ground-truth** and **predicted** bounding boxes using OpenCV and Matplotlib.
 
-Implements the **DataIngestion** class, which automates dataset download and extraction using **KaggleHub**.
+## ⚙️ **Running the Notebook**
 
-**Core functionality includes:**
+Because this notebook depends on GPU acceleration and Kaggle’s pre-mounted dataset structure, it must be executed **directly on Kaggle**.
 
-* Directory creation under `artifacts/raw/`
-* Downloading the specified Kaggle dataset
-* Moving image and label files to structured subfolders
-* Unified logging and exception handling for full traceability
+### Steps:
 
-**Example Usage:**
+1. Go to the dataset page:
+   👉 [https://www.kaggle.com/datasets/issaisasank/guns-object-detection](https://www.kaggle.com/datasets/issaisasank/guns-object-detection)
 
-```python
-from src.data_ingestion import DataIngestion
-from config.data_ingestion_config import DATASET_NAME, TARGET_DIR
+2. Click **`<> Code`** → **New Notebook**.
 
-if __name__ == "__main__":
-    ingestion = DataIngestion(DATASET_NAME, TARGET_DIR)
-    ingestion.run()
-```
+3. Open the right-hand **Settings** panel.
 
-## 🧾 **Expected Output**
+4. Under **Accelerator**, select **GPU (P100)**.
 
-```
-2025-10-20 00:56:17,580 - INFO - DataIngestion initialised with dataset: issaisasank/guns-object-detection
-2025-10-20 00:56:17,580 - INFO - 🚀 Starting Data Ingestion Pipeline...
-2025-10-20 00:56:17,581 - INFO - Starting dataset download from Kaggle: issaisasank/guns-object-detection
-2025-10-20 00:56:18,325 - INFO - Dataset downloaded successfully to temporary path: C:\Users\HP\.cache\kagglehub\datasets\issaisasank\guns-object-detection\versions\1
-2025-10-20 00:56:18,326 - WARNING - Images folder does not exist in the extracted archive.
-2025-10-20 00:56:18,360 - INFO - Labels moved successfully.
-2025-10-20 00:56:18,360 - INFO - ✅ Data Ingestion Pipeline completed successfully.
-```
+5. If GPU is greyed out, verify your Kaggle account via email or phone.
 
-## 🚀 **Next Stage**
+6. Copy or upload `guns-object-detection.ipynb` into the editor.
 
-The next workflow stage will focus on **Experimentation using Kaggle Notebooks**.
-This phase will include:
+7. Run all cells sequentially to load data, train the model, and visualise predictions.
 
-* Exploring the ingested dataset and verifying data integrity
-* Inspecting sample images and label coordinates
-* Performing early experiments on bounding box visualisation and annotation consistency
-* Documenting findings for subsequent preprocessing and model training stages
+## 🧠 **Outputs**
 
-✅ **In summary:**
-The **Data Ingestion stage** establishes a complete, automated process for downloading, extracting, and structuring the dataset, forming a reliable foundation for all future stages in the **MLOps Gun Detection** pipeline.
+| Output                        | Description                                             |
+| :---------------------------- | :------------------------------------------------------ |
+| **Trained Model (in-memory)** | Faster R-CNN model trained for firearm detection.       |
+| **Predictions**               | Bounding boxes and confidence scores for detected guns. |
+| **Visualisations**            | Ground-truth vs predicted box plots using Matplotlib.   |
+| **Training Logs**             | Epoch-wise loss metrics displayed in notebook output.   |
+
+## 🧩 **Integration with MLOps Pipeline**
+
+This notebook establishes the foundation for a **reproducible MLOps pipeline** in subsequent branches:
+
+* The **`Gun_Data`** dataset class and **`Model`** wrapper will be modularised under `src/data_processing.py` and `src/model_training.py`.
+
+* Future pipelines will automate dataset ingestion, preprocessing, training, and inference tracking.
+
+* Trained weights will be versioned and stored under `artifacts/models/` for downstream deployment.
+
+* Integration with **Flask or FastAPI inference apps** will follow after preprocessing automation.
+
+## 🚀 **Next Stage — Data Preprocessing**
+
+The next branch evolves this experimental notebook into a structured **data preprocessing pipeline**, featuring:
+
+* Creation of `src/data_processing.py` for automated normalisation, augmentation, and transformation logic.
+* Parameter and path configuration updates under `config/`.
+* Artefact storage under `artifacts/processed/` for versioned, reusable datasets.
+* Integration of logging and exception handling to ensure pipeline robustness.
+
+This transition marks the evolution from **GPU-based research** → **modular data preprocessing pipeline**, bridging the gap between **experimentation and engineered automation**.
+
+## ✅ **Best Practices**
+
+* Always enable **GPU (P100)** before training.
+* Run cells sequentially from top to bottom — the workflow is linear.
+* Save sample predictions and bounding box plots for reporting.
+* Keep code modular and move reusable components into `src/` as the project matures.
+* Treat this notebook as a **sandbox** — production logic will be implemented in future pipeline stages.
