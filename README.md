@@ -26,6 +26,14 @@ mlops-gun-detection/
         └── tensorboard.png   # Screenshot for README
 ```
 
-## 🚀 Next Stage — Training Pipeline with DVC
+## 🚀 Next Stage — API Deployment with FastAPI, Swagger UI & Postman
 
-Next, we’ll add a **DVC-powered training pipeline** to version data, params, models, and metrics, and make experiments fully reproducible end-to-end.
+Next, we’ll build an **inference API** using **FastAPI**, providing a lightweight and production-ready interface for model predictions.  
+This stage will include:
+
+* 🧠 Integration of the trained Faster R-CNN model for live inference  
+* ⚙️ REST endpoints documented automatically with **Swagger UI**  
+* 🧪 Endpoint testing and validation using **Postman**  
+* 📦 Container-ready structure for deployment in future stages  
+
+This marks the transition from **model training** to **real-world serving**, enabling external systems to interact with the Gun Detection model via a clean, documented API.

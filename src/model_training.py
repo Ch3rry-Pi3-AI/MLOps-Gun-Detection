@@ -145,7 +145,7 @@ class ModelTraining:
         try:
             # Load dataset and limit to a subset (optional)
             dataset = GunDataset(self.dataset_path, self.device)
-            dataset = torch.utils.data.Subset(dataset, range(20))  # limit for faster testing
+            dataset = torch.utils.data.Subset(dataset, range(300))  # limit for faster testing
 
             # Compute train/validation split sizes
             train_size = int(0.8 * len(dataset))
