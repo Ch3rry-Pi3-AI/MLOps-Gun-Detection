@@ -22,18 +22,12 @@ This stage transforms the pipeline from **data preprocessing** into **model conf
 ```text
 mlops-gun-detection/
 ├── artifacts/
-│   └── raw/
-│       ├── Images/                  # Image samples from Kaggle dataset
-│       └── Labels/                  # Bounding box coordinate files
 ├── src/
 │   ├── custom_exception.py          # Unified error handling
 │   ├── data_ingestion.py            # Dataset download and extraction
 │   ├── data_processing.py           # GunDataset class for image + label preprocessing
 │   ├── model_architecture.py        # Faster R-CNN definition and training logic
 │   ├── logger.py                    # Centralised logging configuration
-│   └── __init__.py
-├── pipeline/
-│   ├── training_pipeline.py         # (Upcoming) Model training pipeline
 │   └── __init__.py
 ├── requirements.txt
 ├── setup.py
