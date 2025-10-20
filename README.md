@@ -1,155 +1,131 @@
-# 🧠 **Model Architecture — MLOps Gun Detection**
+# 🏋️ **Model Training — MLOps Gun Detection**
 
-This branch represents the **Model Architecture stage** of the **MLOps Gun Detection** pipeline.
-Here, the project evolves from pure data preparation into **deep learning model design**, defining the **Faster R-CNN (ResNet-50 FPN)** backbone, compilation logic, and structured training routine.
+This branch represents the **Model Training stage** of the **MLOps Gun Detection** pipeline.
+Here, we move from model definition to a **reproducible training workflow** that handles dataset splitting, dataloaders, training/validation loops, TensorBoard logging, and checkpoint saving.
 
-The focus of this stage is to **create a reusable and configurable object detection model**, integrate it with the preprocessed dataset, and establish a foundation for systematic model training in the next stage.
+For fast iteration in this stage, training uses a **small subset of 5 samples**. This is intentional and will be expanded again in later stages.
 
 ## 🧾 **What This Stage Includes**
 
-* ✅ New module: `src/model_architecture.py` defining the `FasterRCNNModel` class
-* ✅ Model creation using **Faster R-CNN with ResNet-50 FPN backbone**
-* ✅ Customisable classifier head for multi-class detection
-* ✅ Model compilation with **Adam optimiser** and configurable learning rate
-* ✅ Structured training loop with **per-epoch progress and loss logging**
-* ✅ Seamless integration with the preprocessed dataset (`GunDataset`)
-* ✅ Comprehensive logging and error handling across all operations
+* ✅ New module: `src/model_training.py` with the `ModelTraining` class
+* ✅ Automated **train/validation split** + `DataLoader` creation
+* ✅ Epoch-based **training loop** with backprop and optimiser steps (Adam)
+* ✅ Post-epoch **validation** and console logging
+* ✅ **TensorBoard** logging for training loss (`tensorboard_logs/`)
+* ✅ **Model checkpoint** saving to `artifacts/models/fasterrcnn.pth`
+* ✅ Robust **logging** and **exception handling** throughout
 
-This stage transforms the pipeline from **data preprocessing** into **model configuration and training orchestration**, enabling reproducible experimentation and modular model development.
+This stage turns the architecture into a **working training system** that can be scaled in future branches.
 
 ## 🗂️ **Updated Project Structure**
 
 ```text
 mlops-gun-detection/
 ├── artifacts/
+│   └── models/                      # Saved model checkpoints
+├── tensorboard_logs/                # TB runs created by ModelTraining
 ├── src/
 │   ├── custom_exception.py          # Unified error handling
 │   ├── data_ingestion.py            # Dataset download and extraction
 │   ├── data_processing.py           # GunDataset class for image + label preprocessing
-│   ├── model_architecture.py        # Faster R-CNN definition and training logic
 │   ├── logger.py                    # Centralised logging configuration
-│   └── __init__.py
+│   ├── model_architecture.py        # Faster R-CNN definition and compile/train helpers
+│   └── model_training.py            # Training orchestration, validation, checkpoints, TB
 ├── requirements.txt
 ├── setup.py
 └── README.md                        # 📖 You are here
 ```
 
-> 💡 The dataset remains sourced from [**issaisasank/guns-object-detection**](https://www.kaggle.com/datasets/issaisasank/guns-object-detection).
-> GPU acceleration is strongly recommended for all training-related operations.
-> Use the preprocessed dataset under `artifacts/raw/` as input for model development.
+> 💡 In this branch, `ModelTraining.split_dataset()` limits the dataset to a **subset of 5** for quick experimentation. This cap will be removed in later stages to train on the full dataset.
 
 ## 🧩 **Key Module Highlights**
 
-### 🔹 `src/model_architecture.py` — Faster R-CNN Definition
+### 🔹 `src/model_training.py` — Training Orchestration
 
-Implements the **`FasterRCNNModel`** class, encapsulating all model-related operations:
-creation, compilation, and training.
+Implements the **`ModelTraining`** class to coordinate:
 
-Handles:
+* Train/val split and `DataLoader` creation
+* Training loop (loss forward pass → backward → optimiser step)
+* Validation loop after each epoch
+* **TensorBoard** scalar logging: `Loss/train`
+* Checkpoint saving to `artifacts/models/fasterrcnn.pth`
 
-* Model loading with **pretrained COCO weights (ResNet-50 FPN)**
-* Custom classifier head for binary (gun vs background) detection
-* Compilation using **Adam optimiser**
-* Device management (automatic GPU/CPU assignment)
-* Epoch-based training with **progress bars (TQDM)**
-* Integrated logging and exception handling for every step
+### 🔹 `src/model_architecture.py` — Model Builder
 
-This class ensures that model training is reproducible, modular, and easy to monitor, forming the blueprint for the upcoming training pipeline.
+Creates and compiles **Faster R-CNN (ResNet-50 FPN)** and exposes a clean API the trainer can use.
 
 ### 🔹 `src/data_processing.py` — Dataset Interface
 
-Defines the **`GunDataset`** class, responsible for converting raw image and label files into normalised PyTorch tensors.
-This dataset feeds directly into the `train()` method of the model for supervised training.
+Supplies normalised tensors and target dictionaries compatible with TorchVision’s detection models.
 
-### 🔹 `src/logger.py` — Logging System
-
-Centralises all runtime logs from model creation, compilation, and training loops.
-Each epoch and loss value is logged for traceability.
-
-### 🔹 `src/custom_exception.py` — Exception Handling
-
-Ensures consistent and clear exception messages when model creation, optimiser setup, or training steps fail.
-Provides complete traceback information for debugging.
-
-## ⚙️ **Testing the Model Module**
-
-You can test the model creation and training process with:
+## ⚙️ **Running Training**
 
 ```bash
-python src/model_architecture.py
+python src/model_training.py
 ```
 
-Or, use an interactive example:
+Or, instantiate programmatically:
 
 ```python
+from src.model_training import ModelTraining
 from src.model_architecture import FasterRCNNModel
-from src.data_processing import GunDataset
-from torch.utils.data import DataLoader
 import torch
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
-# Prepare dataset and DataLoader
-dataset = GunDataset(root="artifacts/raw", device=device)
-train_loader = DataLoader(dataset, batch_size=2, shuffle=True, num_workers=0)
-
-# Build and train the model
-model = FasterRCNNModel(num_classes=2, device=device)
-model.compile(lr=1e-4)
-model.train(train_loader, num_epochs=5)
+trainer = ModelTraining(
+    model_class=FasterRCNNModel,
+    num_classes=2,
+    learning_rate=1e-4,
+    epochs=1,
+    dataset_path="artifacts/raw/",
+    device=device
+)
+trainer.train()
 ```
 
-Expected output (sample):
+Expected console logs (sample):
 
 ```
-2025-10-21 14:12:03,110 - INFO - ✅ Model architecture initialised successfully.
-2025-10-21 14:12:03,890 - INFO - ⚙️ Model compiled successfully with learning rate 0.0001
-2025-10-21 14:12:04,015 - INFO - 🚀 Epoch 1 started...
-2025-10-21 14:12:36,247 - INFO - ✅ Epoch 1 completed | Total Loss: 1.3478
+✅ Dataset successfully split into training and validation sets.
+🚀 Starting Epoch 1/1
+📉 Validation Loss Type: <class 'dict'>
+VAL_LOSS: {'loss_classifier': tensor(...), 'loss_box_reg': tensor(...), ...}
+✅ Model saved successfully at artifacts/models/fasterrcnn.pth
 ```
-
-This confirms that the model is correctly instantiated, compiled, and trained for the specified number of epochs.
 
 ## 🧠 **Outputs**
 
-| Output                 | Description                                           |
-| :--------------------- | :---------------------------------------------------- |
-| **Model Object**       | Initialised Faster R-CNN model with modified head     |
-| **Compiled Optimiser** | Adam optimiser with configured learning rate          |
-| **Training Logs**      | Epoch-wise training progress and total loss           |
-| **Error Handling**     | Contextualised exceptions for model setup or training |
+| Output                      | Description                                                |
+| :-------------------------- | :--------------------------------------------------------- |
+| **Model Checkpoint**        | `artifacts/models/fasterrcnn.pth`                          |
+| **TensorBoard Logs**        | Scalars written under `tensorboard_logs/`                  |
+| **Training Console Logs**   | Epoch progress and validation summaries                    |
+| **Exception-safe Workflow** | Consistent error messages via `CustomException` + `logger` |
 
 ## 🧩 **Integration with MLOps Pipeline**
 
-This stage marks the transition into the **model layer** of the MLOps Gun Detection pipeline.
-The model architecture defined here will be integrated with future components for automated training and deployment.
+This training stage integrates seamlessly with the existing modules:
 
-In the next stages:
+* Uses `GunDataset` to load preprocessed samples
+* Consumes the `FasterRCNNModel` API for model creation/compilation
+* Produces **checkpoints** and **logs** for downstream evaluation and deployment
 
-* The **FasterRCNNModel** class will be integrated into `training_pipeline.py`.
-* Training, validation, and checkpointing will be automated.
-* Model weights will be versioned under `artifacts/models/`.
-* Evaluation metrics (precision, recall, IoU) will be added for monitoring model performance.
+Upcoming enhancements will expand dataset size, add proper validation metrics (mAP/IoU), and introduce experiment management.
 
-This integration will ensure a seamless flow from **data → model → training → evaluation**.
+## 🚀 **Next Stage — Experiment Tracking with TensorBoard**
 
-## 🚀 **Next Stage — Model Training**
+The next branch focuses on **Experiment Tracking**:
 
-The next branch introduces the **Model Training stage**, focusing on structured experiment management and training automation.
-This will include:
-
-* Integration of the `FasterRCNNModel` into a reusable **training pipeline**
-* Addition of **evaluation and checkpoint saving** logic
-* Logging of key performance metrics per epoch
-* Versioning of trained weights under `artifacts/models/`
-* Preparation for deployment-ready inference pipelines
-
-This marks the transition from **model design** to **systematic training and evaluation**, laying the groundwork for reproducible machine learning in production.
+* Standardise **TensorBoard** logging across metrics (loss components, learning rate, epoch timings)
+* Add **run metadata** (hyperparameters, dataset size, seed)
+* Provide **how-to** docs for launching and comparing runs (e.g., `tensorboard --logdir tensorboard_logs`)
+* Prepare structure for future integration with MLflow/W&B if desired
 
 ## ✅ **Best Practices**
 
-* Always verify CUDA availability before model training.
-* Keep the `num_classes` parameter consistent with your dataset.
-* Monitor logs under `logs/` to track epoch progress and potential issues.
-* Validate training stability with small batch sizes before scaling up.
-* Use version control (e.g., Git branches) for each experimental architecture variant.
+* Start with small epochs and batch sizes; scale up after stability checks
+* Always verify CUDA availability (`torch.cuda.is_available()`)
+* Version your checkpoints under `artifacts/models/`
+* Keep logs tidy: one run directory per experiment in `tensorboard_logs/`
+* Record your training config in git (commit the exact code you ran)
