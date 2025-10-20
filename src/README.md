@@ -1,7 +1,7 @@
-# 🧩 **`src/` README — Core Modules (Utilities, Ingestion, Processing & Architecture)**
+# 🧩 **`src/` README — Core Modules (Utilities, Ingestion, Processing, Architecture & Training)**
 
 This folder contains the **core source modules** that power the **MLOps Gun Detection** project.
-Together, they provide the foundational functionality for **data ingestion**, **image preprocessing**, **model architecture**, **logging**, and **exception handling** — ensuring a fully traceable, reproducible, and maintainable workflow across all stages of the pipeline.
+Together, they provide the foundational functionality for **data ingestion**, **image preprocessing**, **model architecture**, **training**, **logging**, and **exception handling** — ensuring a fully traceable, reproducible, and maintainable workflow across all stages of the pipeline.
 
 ## 📁 **Folder Overview**
 
@@ -11,7 +11,8 @@ src/
 ├─ logger.py               # Centralised logging configuration
 ├─ data_ingestion.py       # Handles Kaggle dataset download and extraction
 ├─ data_processing.py      # Custom PyTorch dataset for image + label preprocessing
-└─ model_architecture.py   # Defines Faster R-CNN model and training loop
+├─ model_architecture.py   # Defines Faster R-CNN model and training loop
+└─ model_training.py       # Orchestrates splitting, training, validation, checkpoints, TensorBoard
 ```
 
 ## ⚠️ **`custom_exception.py` — Unified Error Handling**
@@ -223,6 +224,60 @@ model.train(train_loader, num_epochs=5)
 
 This module introduces the **model layer** of the Gun Detection pipeline — preparing the architecture for structured training and evaluation in the next stage.
 
+## 🏋️ **`model_training.py` — Training Orchestration, Validation & Checkpoints**
+
+### 🧠 Purpose
+
+Defines the `ModelTraining` class which **orchestrates the full training workflow**: dataset split, DataLoader creation, training/validation loops, TensorBoard logging, and checkpoint saving.
+
+### 🔑 Key Features
+
+* Splits dataset into **train/val** and builds DataLoaders.
+* Runs the **training loop** with loss backpropagation and optimiser steps.
+* Performs **validation** after each epoch.
+* Logs **training loss** to **TensorBoard** (`tensorboard_logs/`).
+* Saves model checkpoints to `artifacts/models/fasterrcnn.pth`.
+* Uses `logger` + `CustomException` for robust traceability.
+
+> Note: For this stage, the dataset is intentionally limited to a **subset of 5 samples** for quick iteration:
+>
+> ```
+> dataset = torch.utils.data.Subset(dataset, range(5))
+> ```
+>
+> This will be expanded again in later stages.
+
+### 💻 Example Usage
+
+```python
+from src.model_training import ModelTraining
+from src.model_architecture import FasterRCNNModel
+import torch
+
+device = "cuda" if torch.cuda.is_available() else "cpu"
+
+trainer = ModelTraining(
+    model_class=FasterRCNNModel,
+    num_classes=2,
+    learning_rate=1e-4,
+    epochs=1,
+    dataset_path="artifacts/raw/",
+    device=device
+)
+
+trainer.train()
+```
+
+### 🧾 Output Example
+
+```
+2025-10-21 11:02:07,114 - INFO - ✅ Dataset successfully split into training and validation sets.
+2025-10-21 11:02:07,890 - INFO - 🚀 Starting Epoch 1/1
+2025-10-21 11:02:32,241 - INFO - 📉 Validation Loss Type: <class 'dict'>
+2025-10-21 11:02:32,242 - INFO - VAL_LOSS: {'loss_classifier': tensor(...), 'loss_box_reg': tensor(...), ...}
+2025-10-21 11:02:32,912 - INFO - ✅ Model saved successfully at artifacts/models/fasterrcnn.pth
+```
+
 ## 🧩 **Integration Guidelines**
 
 | Module Type        | Use `CustomException` for…                        | Use `get_logger` for…                                      |
@@ -230,7 +285,7 @@ This module introduces the **model layer** of the Gun Detection pipeline — pre
 | Data Ingestion     | File I/O, missing directories, or download errors | Tracking dataset downloads and extraction progress         |
 | Data Processing    | OpenCV read or label parsing errors               | Logging preprocessing, normalisation, and label loading    |
 | Model Architecture | Optimiser setup or training errors                | Logging model creation, compilation, and training progress |
-| Training Pipeline  | Runtime issues or device mismatches               | Logging loss metrics and validation performance            |
+| Model Training     | Runtime issues, device mismatches, checkpoint I/O | Logging losses, validation results, and checkpoint saves   |
 | Inference Pipeline | Detection or rendering issues                     | Logging predictions and confidence thresholds              |
 
 By combining **centralised logging**, **structured exception handling**, and **modular architecture**, every component of the Gun Detection pipeline remains transparent, reliable, and easy to debug.
@@ -242,5 +297,6 @@ By combining **centralised logging**, **structured exception handling**, and **m
 * `data_ingestion.py` automates **dataset download and extraction**.
 * `data_processing.py` delivers **robust data loading and preprocessing**.
 * `model_architecture.py` defines the **Faster R-CNN backbone and training routine**.
+* `model_training.py` **runs end-to-end training**, validation, TensorBoard logging, and checkpointing.
 
-Together, these modules form the **core operational backbone** of the **MLOps Gun Detection** system, enabling a seamless transition from **data preparation** to **model training** in the next stage.
+Together, these modules form the **core operational backbone** of the **MLOps Gun Detection** system, enabling a seamless transition from **data preparation** to **scalable model training** in the upcoming stages.
