@@ -1,20 +1,21 @@
-# 🧠 **Data Processing & Dataset Preparation — MLOps Gun Detection**
+# 🧠 **Model Architecture — MLOps Gun Detection**
 
-This branch represents the **data preparation stage** of the **MLOps Gun Detection** pipeline.
-Here, the project evolves from experimental Kaggle notebook development into a **modular, reusable data processing system**.
+This branch represents the **Model Architecture stage** of the **MLOps Gun Detection** pipeline.
+Here, the project evolves from pure data preparation into **deep learning model design**, defining the **Faster R-CNN (ResNet-50 FPN)** backbone, compilation logic, and structured training routine.
 
-The focus of this stage is to **standardise dataset handling**, build a **robust PyTorch Dataset class**, and ensure that image–label pairs are properly loaded, validated, and moved to the correct device (CPU/GPU) with full logging and error handling support.
+The focus of this stage is to **create a reusable and configurable object detection model**, integrate it with the preprocessed dataset, and establish a foundation for systematic model training in the next stage.
 
 ## 🧾 **What This Stage Includes**
 
-* ✅ New module: `src/data_processing.py` implementing the `GunDataset` class
-* ✅ Integration of **custom logging** and **exception handling** for all preprocessing steps
-* ✅ Normalisation and tensor conversion of image data using **OpenCV** and **PyTorch**
-* ✅ Automatic computation of **bounding box areas** and **object labels**
-* ✅ Robust file verification and error management with `CustomException`
-* ✅ Standalone test block to validate dataset integrity
+* ✅ New module: `src/model_architecture.py` defining the `FasterRCNNModel` class
+* ✅ Model creation using **Faster R-CNN with ResNet-50 FPN backbone**
+* ✅ Customisable classifier head for multi-class detection
+* ✅ Model compilation with **Adam optimiser** and configurable learning rate
+* ✅ Structured training loop with **per-epoch progress and loss logging**
+* ✅ Seamless integration with the preprocessed dataset (`GunDataset`)
+* ✅ Comprehensive logging and error handling across all operations
 
-This stage transforms the project from **notebook-based experimentation** into a **structured and traceable data preparation layer**, forming the bridge between dataset ingestion and model training.
+This stage transforms the pipeline from **data preprocessing** into **model configuration and training orchestration**, enabling reproducible experimentation and modular model development.
 
 ## 🗂️ **Updated Project Structure**
 
@@ -23,107 +24,138 @@ mlops-gun-detection/
 ├── artifacts/
 │   └── raw/
 │       ├── Images/                  # Image samples from Kaggle dataset
-│       └── Labels/                  # Text files containing bounding box coordinates
+│       └── Labels/                  # Bounding box coordinate files
 ├── src/
 │   ├── custom_exception.py          # Unified error handling
 │   ├── data_ingestion.py            # Dataset download and extraction
-│   ├── data_processing.py           # New GunDataset class for image + label loading
+│   ├── data_processing.py           # GunDataset class for image + label preprocessing
+│   ├── model_architecture.py        # Faster R-CNN definition and training logic
 │   ├── logger.py                    # Centralised logging configuration
+│   └── __init__.py
+├── pipeline/
+│   ├── training_pipeline.py         # (Upcoming) Model training pipeline
 │   └── __init__.py
 ├── requirements.txt
 ├── setup.py
 └── README.md                        # 📖 You are here
 ```
 
-> 💡 The dataset for this stage remains sourced from **Kaggle**, under
-> [https://www.kaggle.com/datasets/issaisasank/guns-object-detection](https://www.kaggle.com/datasets/issaisasank/guns-object-detection).
-> Ensure GPU acceleration is available if you plan to verify data loading in a Kaggle or local CUDA-enabled environment.
+> 💡 The dataset remains sourced from [**issaisasank/guns-object-detection**](https://www.kaggle.com/datasets/issaisasank/guns-object-detection).
+> GPU acceleration is strongly recommended for all training-related operations.
+> Use the preprocessed dataset under `artifacts/raw/` as input for model development.
 
 ## 🧩 **Key Module Highlights**
 
-### 🔹 `src/data_processing.py` — Dataset Definition
+### 🔹 `src/model_architecture.py` — Faster R-CNN Definition
 
-Implements the **`GunDataset`** class that prepares the dataset for object detection training.
+Implements the **`FasterRCNNModel`** class, encapsulating all model-related operations:
+creation, compilation, and training.
+
 Handles:
 
-* Image reading via OpenCV
-* RGB conversion and normalisation
-* Bounding box loading from text files
-* Label and area computation
-* Device transfer and tensor formatting
-* Detailed logging and structured exception handling
+* Model loading with **pretrained COCO weights (ResNet-50 FPN)**
+* Custom classifier head for binary (gun vs background) detection
+* Compilation using **Adam optimiser**
+* Device management (automatic GPU/CPU assignment)
+* Epoch-based training with **progress bars (TQDM)**
+* Integrated logging and exception handling for every step
 
-This class ensures every data sample is validated, logged, and returned in the exact structure expected by **Faster R-CNN** and other object detection models.
+This class ensures that model training is reproducible, modular, and easy to monitor, forming the blueprint for the upcoming training pipeline.
+
+### 🔹 `src/data_processing.py` — Dataset Interface
+
+Defines the **`GunDataset`** class, responsible for converting raw image and label files into normalised PyTorch tensors.
+This dataset feeds directly into the `train()` method of the model for supervised training.
 
 ### 🔹 `src/logger.py` — Logging System
 
-Handles all structured logging within the pipeline.
-Each operation (image load, label parse, dataset check) is timestamped and written to a daily log file under `logs/`.
+Centralises all runtime logs from model creation, compilation, and training loops.
+Each epoch and loss value is logged for traceability.
 
 ### 🔹 `src/custom_exception.py` — Exception Handling
 
-Guarantees consistent and traceable error reporting across modules, identifying both the source file and line number of failures.
+Ensures consistent and clear exception messages when model creation, optimiser setup, or training steps fail.
+Provides complete traceback information for debugging.
 
-### 🔹 `src/data_ingestion.py` — Dataset Retrieval
+## ⚙️ **Testing the Model Module**
 
-Maintains the ingestion logic for downloading and preparing the Kaggle dataset, ensuring the correct directory structure under `artifacts/raw/`.
-
-## ⚙️ **Testing the Module**
-
-To validate dataset loading and verify proper image–label pairing, you can run:
+You can test the model creation and training process with:
 
 ```bash
-python src/data_processing.py
+python src/model_architecture.py
+```
+
+Or, use an interactive example:
+
+```python
+from src.model_architecture import FasterRCNNModel
+from src.data_processing import GunDataset
+from torch.utils.data import DataLoader
+import torch
+
+device = "cuda" if torch.cuda.is_available() else "cpu"
+
+# Prepare dataset and DataLoader
+dataset = GunDataset(root="artifacts/raw", device=device)
+train_loader = DataLoader(dataset, batch_size=2, shuffle=True, num_workers=0)
+
+# Build and train the model
+model = FasterRCNNModel(num_classes=2, device=device)
+model.compile(lr=1e-4)
+model.train(train_loader, num_epochs=5)
 ```
 
 Expected output (sample):
 
 ```
-2025-10-20 19:05:42,018 - INFO - ✅ Data Processing Initialised...
-2025-10-20 19:05:42,152 - INFO - 📸 Loading data for index 0
-2025-10-20 19:05:42,384 - INFO - Image Path: artifacts/raw/Images/001.jpeg
-🖼️ Image Shape: torch.Size([3, 480, 640])
-📦 Target Keys: dict_keys(['boxes', 'area', 'image_id', 'labels'])
-🔲 Bounding Boxes: tensor([[ 54., 129., 212., 320.]])
+2025-10-21 14:12:03,110 - INFO - ✅ Model architecture initialised successfully.
+2025-10-21 14:12:03,890 - INFO - ⚙️ Model compiled successfully with learning rate 0.0001
+2025-10-21 14:12:04,015 - INFO - 🚀 Epoch 1 started...
+2025-10-21 14:12:36,247 - INFO - ✅ Epoch 1 completed | Total Loss: 1.3478
 ```
 
-This confirms that images and bounding boxes are loaded correctly and tensors are transferred to the specified device.
+This confirms that the model is correctly instantiated, compiled, and trained for the specified number of epochs.
 
 ## 🧠 **Outputs**
 
-| Output                   | Description                                               |
-| :----------------------- | :-------------------------------------------------------- |
-| **Preprocessed Dataset** | Images and bounding boxes converted into PyTorch tensors  |
-| **Target Dictionary**    | Contains bounding boxes, labels, areas, and image IDs     |
-| **Logging Output**       | Detailed logs for dataset loading and preprocessing       |
-| **Custom Exceptions**    | Traceable, formatted error messages during I/O operations |
+| Output                 | Description                                           |
+| :--------------------- | :---------------------------------------------------- |
+| **Model Object**       | Initialised Faster R-CNN model with modified head     |
+| **Compiled Optimiser** | Adam optimiser with configured learning rate          |
+| **Training Logs**      | Epoch-wise training progress and total loss           |
+| **Error Handling**     | Contextualised exceptions for model setup or training |
 
 ## 🧩 **Integration with MLOps Pipeline**
 
-This stage formalises the **data foundation** for downstream model development and training.
+This stage marks the transition into the **model layer** of the MLOps Gun Detection pipeline.
+The model architecture defined here will be integrated with future components for automated training and deployment.
+
 In the next stages:
 
-* The **GunDataset** class will feed directly into the model training pipeline.
-* Integration with `training_pipeline.py` will enable reproducible dataset handling during training and validation.
-* Dataset transformations and augmentations can be modularised into a dedicated **preprocessing pipeline**.
-* All data loading and processing events will remain fully logged and auditable.
+* The **FasterRCNNModel** class will be integrated into `training_pipeline.py`.
+* Training, validation, and checkpointing will be automated.
+* Model weights will be versioned under `artifacts/models/`.
+* Evaluation metrics (precision, recall, IoU) will be added for monitoring model performance.
 
-## 🚀 **Next Stage — Model Architecture**
+This integration will ensure a seamless flow from **data → model → training → evaluation**.
 
-The next branch introduces the **Model Architecture** stage, where the Faster R-CNN design is defined and integrated with the preprocessed dataset.
+## 🚀 **Next Stage — Model Training**
+
+The next branch introduces the **Model Training stage**, focusing on structured experiment management and training automation.
 This will include:
 
-* A dedicated `src/model_architecture.py` module for building and configuring Faster R-CNN.
-* Integration of transfer learning from pre-trained COCO weights.
-* Compilation methods for optimiser, learning rate, and scheduler setup.
-* Training and evaluation hooks for modular reuse within `training_pipeline.py`.
+* Integration of the `FasterRCNNModel` into a reusable **training pipeline**
+* Addition of **evaluation and checkpoint saving** logic
+* Logging of key performance metrics per epoch
+* Versioning of trained weights under `artifacts/models/`
+* Preparation for deployment-ready inference pipelines
 
-This marks the transition from **data preparation** to **deep learning model design and configuration**, paving the way for structured, production-ready training pipelines.
+This marks the transition from **model design** to **systematic training and evaluation**, laying the groundwork for reproducible machine learning in production.
 
 ## ✅ **Best Practices**
 
-* Use GPU-enabled environments for validating large datasets.
-* Keep `logger` calls concise but informative for debugging.
-* Avoid hard-coded paths — reference directories dynamically using `config/paths_config.py`.
-* Test the dataset locally before running large training jobs.
-* Document changes and test outputs to maintain full reproducibility.
+* Always verify CUDA availability before model training.
+* Keep the `num_classes` parameter consistent with your dataset.
+* Monitor logs under `logs/` to track epoch progress and potential issues.
+* Validate training stability with small batch sizes before scaling up.
+* Use version control (e.g., Git branches) for each experimental architecture variant.
